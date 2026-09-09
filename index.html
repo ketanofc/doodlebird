@@ -414,7 +414,7 @@
             assets.bg.src = 'https://i.ibb.co/v4WPXQXP/background.webp';
             assets.bird.src = 'https://i.ibb.co/sJNbdh7F/bird.png';
             assets.pipe.src = 'https://i.ibb.co/7tTjN6v9/pipe.png';
-            assets.ground.src = 'https://i.ibb.co/200XsP7p/ground.png';
+            assets.ground.src = 'https://i.ibb.co/jvP6ZmGY/ground.png';
 
             // ---------- Audio ----------
             class AudioSubsystem {
@@ -461,11 +461,21 @@
 
             // ---------- Ground loop ----------
             let pipes = [];
-            const groundHeight = 75;
+            const groundAspectRatio = 132 / 638;
+            const groundDownwardOffsetRatio = 0.08;
             const groundOverlap = 8;
             let groundTileWidth = 0;
             const groundMesh1 = { position: { x: 0 } };
             const groundMesh2 = { position: { x: 0 } };
+
+            function getGroundHeight() {
+                return Math.round(stateContext.width * groundAspectRatio);
+            }
+
+            function getGroundTop() {
+                const groundHeight = getGroundHeight();
+                return stateContext.height - groundHeight + Math.round(groundHeight * groundDownwardOffsetRatio);
+            }
 
             function resetGroundMeshes() {
                 groundTileWidth = stateContext.width;
@@ -487,21 +497,25 @@
             }
 
             function drawGroundMesh(mesh) {
-                const groundY = stateContext.height - groundHeight;
+                const groundHeight = getGroundHeight();
+                const groundY = getGroundTop();
                 const previousSmoothing = ctx.imageSmoothingEnabled;
                 ctx.imageSmoothingEnabled = false;
-                ctx.drawImage(assets.ground, Math.floor(mesh.position.x), groundY,
+                ctx.drawImage(assets.ground,
+                    0, 0, assets.ground.naturalWidth, assets.ground.naturalHeight,
+                    Math.floor(mesh.position.x), groundY,
                     groundTileWidth + groundOverlap, groundHeight);
                 ctx.imageSmoothingEnabled = previousSmoothing;
             }
 
             function drawSeamlessGround() {
-                const groundY = stateContext.height - groundHeight;
+                const groundHeight = getGroundHeight();
+                const groundY = getGroundTop();
                 const firstX = Math.floor(groundMesh1.position.x);
                 const secondX = Math.floor(groundMesh2.position.x);
 
                 // Fill behind the tiles so a sub-pixel transition can never reveal the canvas.
-                ctx.fillStyle = '#a66a32';
+                ctx.fillStyle = '#6fbd38';
                 ctx.fillRect(0, groundY, stateContext.width, groundHeight);
                 if (!assets.ground.complete || !assets.ground.naturalWidth) return;
 
@@ -564,7 +578,7 @@
                     }
                 }
 
-                if (bird.y + bird.height / 2 >= stateContext.height - 75 || bird.y - bird.height / 2 <= 0) {
+                if (bird.y + bird.height / 2 >= getGroundTop() || bird.y - bird.height / 2 <= 0) {
                     triggerGameOver();
                 }
 
