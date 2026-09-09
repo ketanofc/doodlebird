@@ -655,20 +655,24 @@
 
             // ---------- Rendering ----------
             function renderFrame() {
-                // Draw Background Asset
-                if (assets.bg.complete) {
+                const groundY = stateContext.height - groundHeight;
+
+                // Keep the background out of the ground zone. The background
+                // image contains its own brown ground strip near the bottom.
+                ctx.save();
+                ctx.beginPath();
+                ctx.rect(0, 0, stateContext.width, groundY);
+                ctx.clip();
+                if (assets.bg.complete && assets.bg.naturalWidth) {
                     ctx.drawImage(assets.bg, 0, 0, stateContext.width, stateContext.height);
                 } else {
                     ctx.fillStyle = '#70c5ce';
-                    ctx.fillRect(0, 0, stateContext.width, stateContext.height);
+                    ctx.fillRect(0, 0, stateContext.width, groundY);
                 }
+                ctx.restore();
 
-                // The background asset includes a ground strip. Cover it so the
-                // animated ground tile is the only ground visible at the bottom.
-                const groundY = stateContext.height - groundHeight;
                 ctx.fillStyle = '#70c5ce';
-                ctx.fillRect(0, Math.max(0, groundY - groundHeight), stateContext.width,
-                    stateContext.height - Math.max(0, groundY - groundHeight));
+                ctx.fillRect(0, groundY, stateContext.width, groundHeight);
 
                 // Draw pipes with fixed-aspect caps and flexible shafts.
                 for (let i = 0; i < pipes.length; i++) {
@@ -809,4 +813,5 @@
         })();
     </script>
 </body>
+
 </html>
