@@ -5,12 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>doodlebird</title>
-    <link rel="icon" type="image/jpeg" href="https://i.ibb.co/DDpB5V8M/favicon.jpg">
-    <link rel="icon" type="image/png" sizes="16x16" href="https://i.ibb.co/XrgxxRwc/favicon-16x16.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="https://i.ibb.co/KjbyVs8D/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="https://i.ibb.co/1fMnTg4P/android-chrome-192x192.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="https://i.ibb.co/nqZ1HzgC/android-chrome-512x512.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="https://i.ibb.co/zH4mFPDD/apple-touch-icon.png">
     <link
         href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Gaegu&family=Love+Ya+Like+A+Sister&family=Patrick+Hand+SC&display=swap"
         rel="stylesheet">
@@ -41,7 +35,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100svh;
+            height: 100vh;
             width: 100vw;
             overflow: hidden;
             font-family: var(--font-sub);
@@ -50,7 +44,7 @@
         #app-container {
             position: relative;
             width: 100vw;
-            height: 100svh;
+            height: 100vh;
             max-width: 480px;
             max-height: 854px;
             background: #222;
@@ -62,25 +56,8 @@
 
         @media (min-aspect-ratio: 9/16) {
             #app-container {
-                height: 100svh;
-                width: calc(100svh * (9/16));
-            }
-        }
-
-        @supports (height: 100dvh) {
-            body {
-                height: 100dvh;
-            }
-
-            #app-container {
-                height: 100dvh;
-            }
-
-            @media (min-aspect-ratio: 9/16) {
-                #app-container {
-                    height: 100dvh;
-                    width: calc(100dvh * (9/16));
-                }
+                height: 100vh;
+                width: calc(100vh * (9/16));
             }
         }
 
@@ -479,7 +456,6 @@
             // ---------- Ground loop ----------
             let pipes = [];
             const groundHeight = 75;
-            let backgroundGroundHeight = groundHeight;
             const groundOverlap = 8;
             let groundTileWidth = 0;
             const groundMesh1 = { position: { x: 0 } };
@@ -530,8 +506,6 @@
             function resizeCanvas() {
                 stateContext.width = canvas.width = container.clientWidth;
                 stateContext.height = canvas.height = container.clientHeight;
-                backgroundGroundHeight = groundHeight + Math.max(24,
-                    Math.round(stateContext.width * 0.04));
                 resetGroundMeshes();
                 if (stateContext.current === GameState.START) {
                     bird.reset(stateContext.width, stateContext.height);
@@ -658,27 +632,13 @@
 
             // ---------- Rendering ----------
             function renderFrame() {
-                const groundY = stateContext.height - groundHeight;
-                const backgroundGroundY = Math.max(0,
-                    stateContext.height - backgroundGroundHeight);
-
-                // Keep the background out of the ground zone. The background
-                // image contains its own brown ground strip near the bottom.
-                ctx.save();
-                ctx.beginPath();
-                ctx.rect(0, 0, stateContext.width, backgroundGroundY);
-                ctx.clip();
-                if (assets.bg.complete && assets.bg.naturalWidth) {
+                // Draw Background Asset
+                if (assets.bg.complete) {
                     ctx.drawImage(assets.bg, 0, 0, stateContext.width, stateContext.height);
                 } else {
                     ctx.fillStyle = '#70c5ce';
-                    ctx.fillRect(0, 0, stateContext.width, groundY);
+                    ctx.fillRect(0, 0, stateContext.width, stateContext.height);
                 }
-                ctx.restore();
-
-                ctx.fillStyle = '#70c5ce';
-                ctx.fillRect(0, backgroundGroundY, stateContext.width,
-                    stateContext.height - backgroundGroundY);
 
                 // Draw pipes with fixed-aspect caps and flexible shafts.
                 for (let i = 0; i < pipes.length; i++) {
@@ -819,5 +779,4 @@
         })();
     </script>
 </body>
-
 </html>
