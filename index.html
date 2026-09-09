@@ -41,7 +41,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            height: 100svh;
             width: 100vw;
             overflow: hidden;
             font-family: var(--font-sub);
@@ -50,7 +50,7 @@
         #app-container {
             position: relative;
             width: 100vw;
-            height: 100vh;
+            height: 100svh;
             max-width: 480px;
             max-height: 854px;
             background: #222;
@@ -62,8 +62,25 @@
 
         @media (min-aspect-ratio: 9/16) {
             #app-container {
-                height: 100vh;
-                width: calc(100vh * (9/16));
+                height: 100svh;
+                width: calc(100svh * (9/16));
+            }
+        }
+
+        @supports (height: 100dvh) {
+            body {
+                height: 100dvh;
+            }
+
+            #app-container {
+                height: 100dvh;
+            }
+
+            @media (min-aspect-ratio: 9/16) {
+                #app-container {
+                    height: 100dvh;
+                    width: calc(100dvh * (9/16));
+                }
             }
         }
 
