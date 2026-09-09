@@ -479,6 +479,7 @@
             // ---------- Ground loop ----------
             let pipes = [];
             const groundHeight = 75;
+            let backgroundGroundHeight = groundHeight;
             const groundOverlap = 8;
             let groundTileWidth = 0;
             const groundMesh1 = { position: { x: 0 } };
@@ -529,6 +530,8 @@
             function resizeCanvas() {
                 stateContext.width = canvas.width = container.clientWidth;
                 stateContext.height = canvas.height = container.clientHeight;
+                backgroundGroundHeight = groundHeight + Math.max(24,
+                    Math.round(stateContext.width * 0.04));
                 resetGroundMeshes();
                 if (stateContext.current === GameState.START) {
                     bird.reset(stateContext.width, stateContext.height);
@@ -656,12 +659,14 @@
             // ---------- Rendering ----------
             function renderFrame() {
                 const groundY = stateContext.height - groundHeight;
+                const backgroundGroundY = Math.max(0,
+                    stateContext.height - backgroundGroundHeight);
 
                 // Keep the background out of the ground zone. The background
                 // image contains its own brown ground strip near the bottom.
                 ctx.save();
                 ctx.beginPath();
-                ctx.rect(0, 0, stateContext.width, groundY);
+                ctx.rect(0, 0, stateContext.width, backgroundGroundY);
                 ctx.clip();
                 if (assets.bg.complete && assets.bg.naturalWidth) {
                     ctx.drawImage(assets.bg, 0, 0, stateContext.width, stateContext.height);
@@ -672,7 +677,8 @@
                 ctx.restore();
 
                 ctx.fillStyle = '#70c5ce';
-                ctx.fillRect(0, groundY, stateContext.width, groundHeight);
+                ctx.fillRect(0, backgroundGroundY, stateContext.width,
+                    stateContext.height - backgroundGroundY);
 
                 // Draw pipes with fixed-aspect caps and flexible shafts.
                 for (let i = 0; i < pipes.length; i++) {
