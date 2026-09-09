@@ -511,8 +511,11 @@
             function drawSeamlessGround() {
                 const groundHeight = getGroundHeight();
                 const groundY = getGroundTop();
-                const firstX = Math.floor(groundMesh1.position.x);
-                const secondX = Math.floor(groundMesh2.position.x);
+                const isIntroScreen = stateContext.current === GameState.START;
+                const firstX = isIntroScreen ? 0 : Math.floor(groundMesh1.position.x);
+                const secondX = isIntroScreen
+                    ? groundTileWidth - groundOverlap
+                    : Math.floor(groundMesh2.position.x);
 
                 // Fill behind the tiles so a sub-pixel transition can never reveal the canvas.
                 ctx.fillStyle = '#6fbd38';
@@ -799,4 +802,5 @@
         })();
     </script>
 </body>
+
 </html>
