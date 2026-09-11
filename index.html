@@ -373,8 +373,8 @@
                 PIPE_CAP_SOURCE_RATIO: 0.18,
                 PIPE_JOIN_OVERLAP: 2,
                 PIPE_GAP: 170,
-                SPAWN_INTERVAL_MS: 1583,
-                MAX_FRAME_DELTA_MS: 50,
+                SPAWN_INTERVAL_FRAMES: 95,
+                MAX_FRAME_DELTA: 2,
                 STORAGE_KEY: 'scribble_bird_seamless_ground_best'
             };
 
@@ -543,16 +543,16 @@
             resizeCanvas();
 
             // ---------- Game updates ----------
-            function updateGameEngine(deltaFrames, deltaMs) {
+            function updateGameEngine(deltaFrames) {
                 if (stateContext.current !== GameState.PLAY) return;
 
                 bird.update(deltaFrames);
 
                 updateGroundMovement(CONFIG.PIPE_SPEED, deltaFrames);
 
-                stateContext.spawnTimer += deltaMs;
-                if (stateContext.spawnTimer >= CONFIG.SPAWN_INTERVAL_MS) {
-                    stateContext.spawnTimer -= CONFIG.SPAWN_INTERVAL_MS;
+                stateContext.spawnTimer += deltaFrames;
+                if (stateContext.spawnTimer >= CONFIG.SPAWN_INTERVAL_FRAMES) {
+                    stateContext.spawnTimer -= CONFIG.SPAWN_INTERVAL_FRAMES;
                     let minH = 60;
                     let maxH = stateContext.height - CONFIG.PIPE_GAP - minH - 90;
                     let topH = Math.floor(Math.random() * maxH) + minH;
@@ -689,16 +689,25 @@
             }
 
             let lastFrameTime = 0;
+            let simulationAccumulator = 0;
 
             function mainLoop(timestamp) {
-                const elapsedMs = lastFrameTime === 0 ? 16.67 : timestamp - lastFrameTime;
-                const deltaMs = Math.min(Math.max(elapsedMs, 0), CONFIG.MAX_FRAME_DELTA_MS);
-                const deltaFrames = deltaMs / 16.67;
+                if (!lastFrameTime) lastFrameTime = timestamp;
+                const elapsedFrames = Math.min(
+                    (timestamp - lastFrameTime) / (1000 / 60),
+                    CONFIG.MAX_FRAME_DELTA
+                );
                 lastFrameTime = timestamp;
 
-                updateGameEngine(deltaFrames, deltaMs);
+                // Run gameplay at a fixed 60Hz while rendering at the device refresh rate.
+                simulationAccumulator += elapsedFrames;
+                while (simulationAccumulator >= 1) {
+                    updateGameEngine(1);
+                    stateContext.frames++;
+                    simulationAccumulator -= 1;
+                }
+
                 renderFrame();
-                stateContext.frames++;
                 requestAnimationFrame(mainLoop);
             }
 
@@ -718,7 +727,9 @@
                 stateContext.current = GameState.PLAY;
                 stateContext.score = 0;
                 stateContext.frames = 0;
-                stateContext.spawnTimer = CONFIG.SPAWN_INTERVAL_MS;
+                stateContext.spawnTimer = 0;
+                lastFrameTime = 0;
+                simulationAccumulator = 0;
                 bird.reset(stateContext.width, stateContext.height);
                 bird.velocity = CONFIG.JUMP_FORCE;
                 pipes = [];
@@ -751,6 +762,8 @@
                 bird.reset(stateContext.width, stateContext.height);
                 pipes = [];
                 stateContext.frames = 0;
+                stateContext.spawnTimer = 0;
+                simulationAccumulator = 0;
             }
 
             // ---------- Input handlers ----------
