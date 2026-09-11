@@ -373,8 +373,7 @@
                 PIPE_CAP_SOURCE_RATIO: 0.18,
                 PIPE_JOIN_OVERLAP: 2,
                 PIPE_GAP: 170,
-                SPAWN_INTERVAL_FRAMES: 95,
-                MAX_FRAME_DELTA: 2,
+                SPAWN_INTERVAL: 95,
                 STORAGE_KEY: 'scribble_bird_seamless_ground_best'
             };
 
@@ -386,7 +385,6 @@
                 score: 0,
                 bestScore: parseInt(localStorage.getItem(CONFIG.STORAGE_KEY), 10) || 0,
                 frames: 0,
-                spawnTimer: 0,
                 width: 0,
                 height: 0
             };
@@ -458,10 +456,7 @@
             let bird = {
                 x: 0, y: 0, velocity: 0, width: 48, height: 36, radius: 18,
                 reset(w, h) { this.x = w * 0.32; this.y = h / 2; this.velocity = 0; },
-                update(deltaFrames) {
-                    this.velocity += CONFIG.GRAVITY * deltaFrames;
-                    this.y += this.velocity * deltaFrames;
-                }
+                update() { this.velocity += CONFIG.GRAVITY; this.y += this.velocity; }
             };
 
             // ---------- Ground loop ----------
@@ -543,16 +538,14 @@
             resizeCanvas();
 
             // ---------- Game updates ----------
-            function updateGameEngine(deltaFrames) {
+            function updateGameEngine() {
                 if (stateContext.current !== GameState.PLAY) return;
 
-                bird.update(deltaFrames);
+                bird.update();
 
-                updateGroundMovement(CONFIG.PIPE_SPEED, deltaFrames);
+                updateGroundMovement(CONFIG.PIPE_SPEED, 1);
 
-                stateContext.spawnTimer += deltaFrames;
-                if (stateContext.spawnTimer >= CONFIG.SPAWN_INTERVAL_FRAMES) {
-                    stateContext.spawnTimer -= CONFIG.SPAWN_INTERVAL_FRAMES;
+                if (stateContext.frames % CONFIG.SPAWN_INTERVAL === 0) {
                     let minH = 60;
                     let maxH = stateContext.height - CONFIG.PIPE_GAP - minH - 90;
                     let topH = Math.floor(Math.random() * maxH) + minH;
@@ -572,7 +565,7 @@
 
                 for (let i = pipes.length - 1; i >= 0; i--) {
                     let p = pipes[i];
-                    p.x -= CONFIG.PIPE_SPEED * deltaFrames;
+                    p.x -= CONFIG.PIPE_SPEED;
 
                     if (bRight > p.x && bLeft < p.x + CONFIG.PIPE_WIDTH) {
                         if (bTop < p.topHeight || bBottom > p.bottomY) {
@@ -688,26 +681,10 @@
                 ctx.restore();
             }
 
-            let lastFrameTime = 0;
-            let simulationAccumulator = 0;
-
-            function mainLoop(timestamp) {
-                if (!lastFrameTime) lastFrameTime = timestamp;
-                const elapsedFrames = Math.min(
-                    (timestamp - lastFrameTime) / (1000 / 60),
-                    CONFIG.MAX_FRAME_DELTA
-                );
-                lastFrameTime = timestamp;
-
-                // Run gameplay at a fixed 60Hz while rendering at the device refresh rate.
-                simulationAccumulator += elapsedFrames;
-                while (simulationAccumulator >= 1) {
-                    updateGameEngine(1);
-                    stateContext.frames++;
-                    simulationAccumulator -= 1;
-                }
-
+            function mainLoop() {
+                updateGameEngine();
                 renderFrame();
+                stateContext.frames++;
                 requestAnimationFrame(mainLoop);
             }
 
@@ -727,9 +704,6 @@
                 stateContext.current = GameState.PLAY;
                 stateContext.score = 0;
                 stateContext.frames = 0;
-                stateContext.spawnTimer = 0;
-                lastFrameTime = 0;
-                simulationAccumulator = 0;
                 bird.reset(stateContext.width, stateContext.height);
                 bird.velocity = CONFIG.JUMP_FORCE;
                 pipes = [];
@@ -762,8 +736,6 @@
                 bird.reset(stateContext.width, stateContext.height);
                 pipes = [];
                 stateContext.frames = 0;
-                stateContext.spawnTimer = 0;
-                simulationAccumulator = 0;
             }
 
             // ---------- Input handlers ----------
