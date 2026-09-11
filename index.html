@@ -373,7 +373,8 @@
                 PIPE_CAP_SOURCE_RATIO: 0.18,
                 PIPE_JOIN_OVERLAP: 2,
                 PIPE_GAP: 170,
-                SPAWN_INTERVAL: 95,
+                SPAWN_INTERVAL_MS: 1583,
+                MAX_FRAME_DELTA_MS: 50,
                 STORAGE_KEY: 'scribble_bird_seamless_ground_best'
             };
 
@@ -385,6 +386,7 @@
                 score: 0,
                 bestScore: parseInt(localStorage.getItem(CONFIG.STORAGE_KEY), 10) || 0,
                 frames: 0,
+                spawnTimer: 0,
                 width: 0,
                 height: 0
             };
@@ -456,7 +458,10 @@
             let bird = {
                 x: 0, y: 0, velocity: 0, width: 48, height: 36, radius: 18,
                 reset(w, h) { this.x = w * 0.32; this.y = h / 2; this.velocity = 0; },
-                update() { this.velocity += CONFIG.GRAVITY; this.y += this.velocity; }
+                update(deltaFrames) {
+                    this.velocity += CONFIG.GRAVITY * deltaFrames;
+                    this.y += this.velocity * deltaFrames;
+                }
             };
 
             // ---------- Ground loop ----------
@@ -538,14 +543,16 @@
             resizeCanvas();
 
             // ---------- Game updates ----------
-            function updateGameEngine() {
+            function updateGameEngine(deltaFrames, deltaMs) {
                 if (stateContext.current !== GameState.PLAY) return;
 
-                bird.update();
+                bird.update(deltaFrames);
 
-                updateGroundMovement(CONFIG.PIPE_SPEED, 1);
+                updateGroundMovement(CONFIG.PIPE_SPEED, deltaFrames);
 
-                if (stateContext.frames % CONFIG.SPAWN_INTERVAL === 0) {
+                stateContext.spawnTimer += deltaMs;
+                if (stateContext.spawnTimer >= CONFIG.SPAWN_INTERVAL_MS) {
+                    stateContext.spawnTimer -= CONFIG.SPAWN_INTERVAL_MS;
                     let minH = 60;
                     let maxH = stateContext.height - CONFIG.PIPE_GAP - minH - 90;
                     let topH = Math.floor(Math.random() * maxH) + minH;
@@ -565,7 +572,7 @@
 
                 for (let i = pipes.length - 1; i >= 0; i--) {
                     let p = pipes[i];
-                    p.x -= CONFIG.PIPE_SPEED;
+                    p.x -= CONFIG.PIPE_SPEED * deltaFrames;
 
                     if (bRight > p.x && bLeft < p.x + CONFIG.PIPE_WIDTH) {
                         if (bTop < p.topHeight || bBottom > p.bottomY) {
@@ -681,8 +688,15 @@
                 ctx.restore();
             }
 
-            function mainLoop() {
-                updateGameEngine();
+            let lastFrameTime = 0;
+
+            function mainLoop(timestamp) {
+                const elapsedMs = lastFrameTime === 0 ? 16.67 : timestamp - lastFrameTime;
+                const deltaMs = Math.min(Math.max(elapsedMs, 0), CONFIG.MAX_FRAME_DELTA_MS);
+                const deltaFrames = deltaMs / 16.67;
+                lastFrameTime = timestamp;
+
+                updateGameEngine(deltaFrames, deltaMs);
                 renderFrame();
                 stateContext.frames++;
                 requestAnimationFrame(mainLoop);
@@ -704,6 +718,7 @@
                 stateContext.current = GameState.PLAY;
                 stateContext.score = 0;
                 stateContext.frames = 0;
+                stateContext.spawnTimer = CONFIG.SPAWN_INTERVAL_MS;
                 bird.reset(stateContext.width, stateContext.height);
                 bird.velocity = CONFIG.JUMP_FORCE;
                 pipes = [];
