@@ -414,7 +414,7 @@
             assets.bg.src = 'https://i.ibb.co/v4WPXQXP/background.webp';
             assets.bird.src = 'https://i.ibb.co/sJNbdh7F/bird.png';
             assets.pipe.src = 'https://i.ibb.co/7tTjN6v9/pipe.png';
-            assets.ground.src = 'https://i.ibb.co/jvP6ZmGY/ground.png';
+            assets.ground.src = 'https://i.ibb.co/gZCp5Lpd/groundmain.png';
 
             // ---------- Audio ----------
             class AudioSubsystem {
@@ -461,7 +461,7 @@
 
             // ---------- Ground loop ----------
             let pipes = [];
-            const groundAspectRatio = 132 / 638;
+            const groundAspectRatio = 134 / 638;
             const groundDownwardOffsetRatio = 0.08;
             const groundOverlap = 8;
             let groundTileWidth = 0;
@@ -496,15 +496,35 @@
                 }
             }
 
-            function drawGroundMesh(mesh) {
+            function drawGroundMesh(mesh, blendFromLeft) {
                 const groundHeight = getGroundHeight();
                 const groundY = getGroundTop();
+                const drawWidth = groundTileWidth + groundOverlap;
+                const drawX = Math.floor(mesh.position.x);
                 const previousSmoothing = ctx.imageSmoothingEnabled;
                 ctx.imageSmoothingEnabled = false;
-                ctx.drawImage(assets.ground,
-                    0, 0, assets.ground.naturalWidth, assets.ground.naturalHeight,
-                    Math.floor(mesh.position.x), groundY,
-                    groundTileWidth + groundOverlap, groundHeight);
+                if (blendFromLeft) {
+                    const blendSlices = 16;
+                    const sliceWidth = groundOverlap / blendSlices;
+                    for (let slice = 0; slice < blendSlices; slice++) {
+                        const sliceX = slice * sliceWidth;
+                        ctx.globalAlpha = (slice + 1) / blendSlices;
+                        ctx.drawImage(assets.ground,
+                            assets.ground.naturalWidth * sliceX / drawWidth, 0,
+                            assets.ground.naturalWidth * sliceWidth / drawWidth, assets.ground.naturalHeight,
+                            drawX + sliceX, groundY, sliceWidth, groundHeight);
+                    }
+                    ctx.globalAlpha = 1;
+                    ctx.drawImage(assets.ground,
+                        assets.ground.naturalWidth * groundOverlap / drawWidth, 0,
+                        assets.ground.naturalWidth * (drawWidth - groundOverlap) / drawWidth, assets.ground.naturalHeight,
+                        drawX + groundOverlap, groundY, drawWidth - groundOverlap, groundHeight);
+                } else {
+                    ctx.drawImage(assets.ground,
+                        0, 0, assets.ground.naturalWidth, assets.ground.naturalHeight,
+                        drawX, groundY,
+                        drawWidth, groundHeight);
+                }
                 ctx.imageSmoothingEnabled = previousSmoothing;
             }
 
@@ -522,8 +542,10 @@
                 ctx.fillRect(0, groundY, stateContext.width, groundHeight);
                 if (!assets.ground.complete || !assets.ground.naturalWidth) return;
 
-                drawGroundMesh({ position: { x: firstX } });
-                drawGroundMesh({ position: { x: secondX } });
+                const leftMesh = firstX <= secondX ? firstX : secondX;
+                const rightMesh = firstX <= secondX ? secondX : firstX;
+                drawGroundMesh({ position: { x: leftMesh } }, false);
+                drawGroundMesh({ position: { x: rightMesh } }, true);
             }
 
             function resizeCanvas() {
