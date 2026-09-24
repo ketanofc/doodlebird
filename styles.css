@@ -1,0 +1,257 @@
+/* ---------- Design tokens ---------- */
+:root {
+    --pen-blue: #1b365d;
+    --pen-red: #d9534f;
+    --paper: #fff8e8;
+    --ink: #17212b;
+    --font-hand: 'Architects Daughter', cursive;
+    --font-logo: 'Love Ya Like A Sister', cursive;
+    --font-score: 'Gaegu', cursive;
+    --font-sub: 'Patrick Hand SC', cursive;
+}
+
+/* ---------- Base layout ---------- */
+* {
+    box-sizing: border-box;
+    user-select: none;
+    margin: 0;
+    padding: 0;
+    touch-action: none;
+}
+
+body {
+    background-color: #0d0d0f;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    min-height: 100svh;
+    min-height: 100dvh;
+    overflow: hidden;
+    font-family: var(--font-sub);
+}
+
+#app-container {
+    position: relative;
+    width: 100%;
+    height: 100svh;
+    height: 100dvh;
+    background: #222;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+@media (min-width: 600px) {
+    #app-container {
+        max-width: 480px;
+    }
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+/* ---------- In-game HUD ---------- */
+.ui-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 25px 20px;
+    z-index: 10;
+}
+
+.hud-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.notebook-badge {
+    font-family: var(--font-hand);
+    font-size: 22px;
+    color: #fff;
+    border: 2px dashed rgba(255, 255, 255, 0.7);
+    padding: 4px 14px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.5);
+    transform: rotate(-1deg);
+    letter-spacing: 1px;
+    text-shadow: 1px 1px 0px #000;
+}
+
+.score-display {
+    font-family: var(--font-score);
+    font-size: 20px;
+    color: #fff;
+    text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.8);
+    letter-spacing: 1px;
+}
+
+/* ---------- Start and game-over screens ---------- */
+.screen-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: rgba(20, 31, 36, 0.64);
+    backdrop-filter: blur(4px);
+    pointer-events: auto;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+    z-index: 20;
+}
+
+.screen-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.game-title {
+    font-family: var(--font-logo);
+    font-size: clamp(58px, 17vw, 92px);
+    line-height: 0.86;
+    color: #fff8e8;
+    margin: 14px 0 22px;
+    transform: rotate(-4deg);
+    text-shadow: 4px 4px 0 #b75b43;
+    text-align: center;
+}
+
+.start-panel,
+.game-over-panel {
+    width: min(90%, 380px);
+    padding: 26px 20px 30px;
+    text-align: center;
+    background: transparent;
+    transform: rotate(-1deg);
+}
+
+.start-panel {
+    transform: none;
+}
+
+.game-over-panel {
+    transform: none;
+}
+
+.start-kicker,
+.game-over-kicker {
+    position: relative;
+    color: #f2c65c;
+    font: 24px var(--font-sub);
+    letter-spacing: 3px;
+}
+
+.start-copy {
+    position: relative;
+    color: #fff8e8;
+    font: 25px var(--font-score);
+    font-weight: 700;
+    line-height: 1.05;
+    margin: 0 0 25px;
+}
+
+/* ---------- Screen actions ---------- */
+.hand-crafted-btn {
+    position: relative;
+    background: transparent;
+    border: 0;
+    border-bottom: 3px solid #f2c65c;
+    color: #fff8e8;
+    font-family: var(--font-hand);
+    font-size: 25px;
+    padding: 8px 4px 5px;
+    cursor: pointer;
+    border-radius: 0;
+    transition: all 0.12s ease;
+    box-shadow: none;
+    outline: none;
+}
+
+.hand-crafted-btn:active {
+    transform: translateY(3px) scale(0.98);
+}
+
+.play-img-btn {
+    display: block;
+    margin: 0 auto;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    padding: 8px;
+    transition: transform 0.1s ease;
+}
+
+.play-img-btn img {
+    display: block;
+    width: 170px;
+    height: auto;
+    filter: drop-shadow(3px 3px 0 rgba(0, 0, 0, 0.5));
+}
+
+.play-img-btn:active {
+    transform: scale(0.95);
+}
+
+/* ---------- Game over section ---------- */
+.score-section {
+    margin: 12px 0;
+}
+
+.score-label {
+    font-family: var(--font-sub);
+    font-size: 18px;
+    color: #f2c65c;
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+}
+
+.score-value {
+    font-family: var(--font-score);
+    font-size: 48px;
+    color: #fff8e8;
+    font-weight: 700;
+    text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* Mobile optimizations */
+@media (max-height: 600px) {
+    .game-title {
+        margin: 8px 0 12px;
+    }
+    
+    .start-panel,
+    .game-over-panel {
+        padding: 16px 15px 20px;
+    }
+    
+    .start-copy {
+        font-size: 20px;
+        margin: 0 0 15px;
+    }
+    
+    .score-value {
+        font-size: 36px;
+    }
+}
