@@ -14,53 +14,815 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Gaegu&family=Love+Ya+Like+A+Sister&family=Patrick+Hand+SC&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* ---------- Design tokens ---------- */
+        :root {
+            --pen-blue: #1b365d;
+            --pen-red: #d9534f;
+            --paper: #fff8e8;
+            --ink: #17212b;
+            --font-hand: 'Architects Daughter', cursive;
+            --font-logo: 'Love Ya Like A Sister', cursive;
+            --font-score: 'Gaegu', cursive;
+            --font-sub: 'Patrick Hand SC', cursive;
+        }
+
+        /* ---------- Base layout ---------- */
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            margin: 0;
+            padding: 0;
+            touch-action: none;
+        }
+
+        body {
+            background-color: #0d0d0f;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            min-height: 100svh;
+            min-height: 100dvh;
+            overflow: hidden;
+            font-family: var(--font-sub);
+        }
+
+        #app-container {
+            position: relative;
+            width: 100%;
+            height: 100svh;
+            height: 100dvh;
+            background: #222;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media (min-width: 600px) {
+            #app-container {
+                max-width: 480px;
+            }
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* ---------- In-game HUD ---------- */
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 25px 20px;
+            z-index: 10;
+        }
+
+        .hud-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .notebook-badge {
+            font-family: var(--font-hand);
+            font-size: 22px;
+            color: #fff;
+            border: 2px dashed rgba(255, 255, 255, 0.7);
+            padding: 4px 14px;
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.5);
+            transform: rotate(-1deg);
+            letter-spacing: 1px;
+            text-shadow: 1px 1px 0px #000;
+        }
+
+        /* ---------- Start and game-over screens ---------- */
+        .screen-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(20, 31, 36, 0.64);
+            backdrop-filter: blur(4px);
+            pointer-events: auto;
+            transition: opacity 0.25s ease, visibility 0.25s ease;
+            z-index: 20;
+        }
+
+        .screen-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .game-title {
+            font-family: var(--font-logo);
+            font-size: clamp(58px, 17vw, 92px);
+            line-height: 0.86;
+            color: #fff8e8;
+            margin: 14px 0 22px;
+            transform: rotate(-4deg);
+            text-shadow: 4px 4px 0 #b75b43;
+            text-align: center;
+        }
+
+        .start-panel,
+        .game-over-panel {
+            width: min(90%, 380px);
+            padding: 26px 20px 30px;
+            text-align: center;
+            background: transparent;
+            transform: rotate(-1deg);
+        }
+
+        .start-panel {
+            transform: none;
+        }
+
+        .game-over-panel {
+            transform: none;
+        }
+
+        .start-kicker,
+        .game-over-kicker {
+            position: relative;
+            color: #f2c65c;
+            font: 24px var(--font-sub);
+            letter-spacing: 3px;
+        }
+
+        .start-copy {
+            position: relative;
+            color: #fff8e8;
+            font: 25px var(--font-score);
+            font-weight: 700;
+            line-height: 1.05;
+            margin: 0 0 25px;
+        }
+
+        /* ---------- Screen actions ---------- */
+        .hand-crafted-btn {
+            position: relative;
+            background: transparent;
+            border: 0;
+            border-bottom: 3px solid #f2c65c;
+            color: #fff8e8;
+            font-family: var(--font-hand);
+            font-size: 25px;
+            padding: 8px 4px 5px;
+            cursor: pointer;
+            border-radius: 0;
+            transition: all 0.12s ease;
+            box-shadow: none;
+            outline: none;
+        }
+
+        .hand-crafted-btn:active {
+            transform: translateY(3px) scale(0.98);
+        }
+
+        .play-img-btn {
+            display: block;
+            margin: 0 auto;
+            background: transparent;
+            border: 0;
+            cursor: pointer;
+            padding: 8px;
+            transition: transform 0.1s ease;
+        }
+
+        .play-img-btn img {
+            display: block;
+            width: 170px;
+            height: auto;
+            filter: drop-shadow(3px 3px 0 rgba(0, 0, 0, 0.5));
+        }
+
+        .play-img-btn:active {
+            transform: scale(0.94);
+        }
+
+        /* ---------- Score and game-over actions ---------- */
+        .score-notebook-card {
+            padding: 10px 18px;
+            text-align: center;
+            margin-bottom: 24px;
+            box-shadow: none;
+            width: 100%;
+            transform: none;
+        }
+
+        .game-over-img {
+            max-width: 260px;
+            height: auto;
+            margin: 0 auto 6px;
+            display: block;
+        }
+
+        .restart-img-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            min-width: 116px;
+            min-height: 116px;
+            padding: 10px;
+            transition: transform 0.1s ease;
+        }
+
+        .game-over-actions {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 4px;
+            width: 100%;
+            transform: none;
+        }
+
+        .share-img-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            min-width: 116px;
+            min-height: 116px;
+            padding: 10px;
+            transition: transform 0.1s ease;
+        }
+
+        .share-img-btn img {
+            width: 106px;
+            height: auto;
+            filter: drop-shadow(3px 3px 0px rgba(0, 0, 0, 0.5));
+        }
+
+        .restart-img-btn img {
+            width: 106px;
+            height: auto;
+            filter: drop-shadow(3px 3px 0px rgba(0, 0, 0, 0.5));
+        }
+
+        .restart-img-btn:active {
+            transform: scale(0.92);
+        }
+
+        .share-img-btn:active {
+            transform: scale(0.92);
+        }
+
+        .score-row-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 26px;
+            color: #fff8e8;
+            margin: 10px auto;
+            font-family: var(--font-score);
+            font-weight: 700;
+            width: min(100%, 250px);
+            border-bottom: 1px dashed rgba(255, 248, 232, 0.55);
+            padding-bottom: 4px;
+        }
+
+        .score-row-item span:last-child {
+            color: #f2c65c;
+            font-family: var(--font-score);
+            font-weight: 700;
+        }
+    </style>
 </head>
 
 <body>
+
     <div id="app-container">
         <canvas id="gameCanvas"></canvas>
-        
+
+        <!-- The HUD is visible only while the game is running. -->
         <div class="ui-layer">
             <div class="hud-header">
-                <span class="notebook-badge">doodlebird</span>
-                <div class="score-display" id="scoreBadge">SCORE: 0</div>
+                <div id="score-badge" class="notebook-badge">SCORE: 0</div>
             </div>
         </div>
 
-        <!-- Start Screen -->
-        <div class="screen-overlay" id="startScreen">
-            <h1 class="game-title">doodlebird</h1>
+        <!-- Start screen -->
+        <div id="start-screen" class="screen-overlay">
             <div class="start-panel">
-                <div class="start-kicker">FLAP & FLY</div>
-                <p class="start-copy">Don't hit the pipes!</p>
-                <button class="play-img-btn" id="startBtn">
-                    <img src="https://i.ibb.co/7tQN9YrN/Group-8.png" alt="Play">
+                <h1 class="game-title">doodle<br>bird</h1>
+                <p class="start-copy">flap through the pages<br>and mind the pipes</p>
+                <button class="play-img-btn" id="start-btn" aria-label="Play game">
+                    <img src="https://i.ibb.co/nM8RFdvJ/playgame.png" alt="play game">
                 </button>
             </div>
         </div>
 
-        <!-- Game Over Screen -->
-        <div class="screen-overlay hidden" id="gameOverScreen">
-            <h1 class="game-title">Game Over</h1>
+        <!-- Game-over screen -->
+        <div id="game-over-screen" class="screen-overlay hidden">
             <div class="game-over-panel">
-                <div class="score-section">
-                    <div class="score-label">SCORE</div>
-                    <div class="score-value" id="endScore">0</div>
+                <div class="score-notebook-card">
+                    <img src="https://i.ibb.co/FqwJSRJ0/game-over.png" alt="game over" class="game-over-img">
+                    <div class="score-row-item">
+                        <span>Score</span>
+                        <span id="end-score">0</span>
+                    </div>
+                    <div class="score-row-item">
+                        <span>Best Record</span>
+                        <span id="best-score">0</span>
+                    </div>
                 </div>
-                <div class="score-section">
-                    <div class="score-label">BEST</div>
-                    <div class="score-value" id="bestScore">0</div>
-                </div>
-                <div style="display: flex; gap: 12px; margin-top: 20px; justify-content: center;">
-                    <button class="hand-crafted-btn" id="retryBtn">RETRY</button>
-                    <button class="hand-crafted-btn" id="shareBtn">SHARE</button>
+                <div class="game-over-actions">
+                    <button class="restart-img-btn" id="retry-btn" aria-label="Restart game">
+                        <img src="https://i.ibb.co/Lhd962RY/restart.png" alt="restart">
+                    </button>
+                    <button class="share-img-btn" id="share-btn" aria-label="Share game">
+                        <img src="https://i.ibb.co/BVCYcdY5/share.png" alt="share">
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            // ---------- Game configuration ----------
+            const CONFIG = {
+                GRAVITY: 0.42,
+                JUMP_FORCE: -7.5,
+                PIPE_SPEED: 2.8,
+                PIPE_WIDTH: 88,
+                PIPE_CAP_HEIGHT: 44,
+                PIPE_CAP_SOURCE_RATIO: 0.18,
+                PIPE_JOIN_OVERLAP: 2,
+                PIPE_GAP: 170,
+                SPAWN_INTERVAL: 95,
+                STORAGE_KEY: 'scribble_bird_seamless_ground_best'
+            };
+
+            const GameState = { START: 'START', PLAY: 'PLAY', OVER: 'OVER' };
+
+            // ---------- Game state ----------
+            const stateContext = {
+                current: GameState.START,
+                score: 0,
+                bestScore: parseInt(localStorage.getItem(CONFIG.STORAGE_KEY), 10) || 0,
+                frames: 0,
+                width: 0,
+                height: 0
+            };
+
+            // ---------- DOM and canvas references ----------
+            const container = document.getElementById('app-container');
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d', { alpha: false });
+
+            const startScreen = document.getElementById('start-screen');
+            const gameOverScreen = document.getElementById('game-over-screen');
+            const scoreBadge = document.getElementById('score-badge');
+            const endScoreDisplay = document.getElementById('end-score');
+            const bestScoreDisplay = document.getElementById('best-score');
+            const startBtn = document.getElementById('start-btn');
+            const retryBtn = document.getElementById('retry-btn');
+            const shareBtn = document.getElementById('share-btn');
+
+            // ---------- Asset loading ----------
+            const assets = {
+                bg: new Image(),
+                bird: new Image(),
+                pipe: new Image(),
+                ground: new Image()
+            };
+
+            assets.bg.src = 'https://i.ibb.co/v4WPXQXP/background.webp';
+            assets.bird.src = 'https://i.ibb.co/sJNbdh7F/bird.png';
+            assets.pipe.src = 'https://i.ibb.co/7tTjN6v9/pipe.png';
+            assets.ground.src = 'https://i.ibb.co/gZCp5Lpd/groundmain.png';
+
+            // ---------- Audio ----------
+            class AudioSubsystem {
+                constructor() { this.ctx = null; this.initialized = false; }
+                init() {
+                    if (this.initialized) return;
+                    try {
+                        const AC = window.AudioContext || window.webkitAudioContext;
+                        this.ctx = new AC();
+                        this.initialized = true;
+                    } catch (e) { }
+                }
+                playTone(freq, type, duration, volume) {
+                    if (!this.initialized || !this.ctx) return;
+                    if (this.ctx.state === 'suspended') this.ctx.resume();
+                    try {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = type;
+                        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                        gain.gain.setValueAtTime(volume, this.ctx.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start();
+                        osc.stop(this.ctx.currentTime + duration);
+                    } catch (err) { }
+                }
+                sfxFlap() { this.playTone(340, 'triangle', 0.08, 0.3); }
+                sfxScore() {
+                    this.playTone(580, 'sine', 0.1, 0.15);
+                    setTimeout(() => this.playTone(760, 'sine', 0.12, 0.15), 80);
+                }
+                sfxHit() { this.playTone(130, 'sawtooth', 0.25, 0.4); }
+            }
+            const audio = new AudioSubsystem();
+
+            // ---------- Bird ----------
+            let bird = {
+                x: 0, y: 0, velocity: 0, width: 48, height: 36, radius: 18,
+                reset(w, h) { this.x = w * 0.32; this.y = h / 2; this.velocity = 0; },
+                update() { this.velocity += CONFIG.GRAVITY; this.y += this.velocity; }
+            };
+
+            // ---------- Ground loop ----------
+            let pipes = [];
+            const groundAspectRatio = 134 / 638;
+            const groundDownwardOffsetRatio = 0.08;
+            const groundOverlap = 8;
+            let groundTileWidth = 0;
+            const groundMesh1 = { position: { x: 0 } };
+            const groundMesh2 = { position: { x: 0 } };
+
+            function getGroundHeight() {
+                return Math.round(stateContext.width * groundAspectRatio);
+            }
+
+            function getGroundTop() {
+                const groundHeight = getGroundHeight();
+                return stateContext.height - groundHeight + Math.round(groundHeight * groundDownwardOffsetRatio);
+            }
+
+            function resetGroundMeshes() {
+                groundTileWidth = stateContext.width;
+                groundMesh1.position.x = 0;
+                groundMesh2.position.x = groundTileWidth - groundOverlap;
+            }
+
+            function updateGroundMovement(speed, dt) {
+                groundMesh1.position.x -= speed * dt;
+                groundMesh2.position.x -= speed * dt;
+
+                // Move each tile behind the other one as it leaves the viewport.
+                if (groundMesh1.position.x <= -groundTileWidth) {
+                    groundMesh1.position.x = groundMesh2.position.x + groundTileWidth - groundOverlap;
+                }
+                if (groundMesh2.position.x <= -groundTileWidth) {
+                    groundMesh2.position.x = groundMesh1.position.x + groundTileWidth - groundOverlap;
+                }
+            }
+
+            function drawGroundMesh(mesh, blendFromLeft) {
+                const groundHeight = getGroundHeight();
+                const groundY = getGroundTop();
+                const drawWidth = groundTileWidth + groundOverlap;
+                const drawX = Math.floor(mesh.position.x);
+                const previousSmoothing = ctx.imageSmoothingEnabled;
+                ctx.imageSmoothingEnabled = false;
+                if (blendFromLeft) {
+                    const blendSlices = 16;
+                    const sliceWidth = groundOverlap / blendSlices;
+                    for (let slice = 0; slice < blendSlices; slice++) {
+                        const sliceX = slice * sliceWidth;
+                        ctx.globalAlpha = (slice + 1) / blendSlices;
+                        ctx.drawImage(assets.ground,
+                            assets.ground.naturalWidth * sliceX / drawWidth, 0,
+                            assets.ground.naturalWidth * sliceWidth / drawWidth, assets.ground.naturalHeight,
+                            drawX + sliceX, groundY, sliceWidth, groundHeight);
+                    }
+                    ctx.globalAlpha = 1;
+                    ctx.drawImage(assets.ground,
+                        assets.ground.naturalWidth * groundOverlap / drawWidth, 0,
+                        assets.ground.naturalWidth * (drawWidth - groundOverlap) / drawWidth, assets.ground.naturalHeight,
+                        drawX + groundOverlap, groundY, drawWidth - groundOverlap, groundHeight);
+                } else {
+                    ctx.drawImage(assets.ground,
+                        0, 0, assets.ground.naturalWidth, assets.ground.naturalHeight,
+                        drawX, groundY,
+                        drawWidth, groundHeight);
+                }
+                ctx.imageSmoothingEnabled = previousSmoothing;
+            }
+
+            function drawSeamlessGround() {
+                const groundHeight = getGroundHeight();
+                const groundY = getGroundTop();
+                const isIntroScreen = stateContext.current === GameState.START;
+                const firstX = isIntroScreen ? 0 : Math.floor(groundMesh1.position.x);
+                const secondX = isIntroScreen
+                    ? groundTileWidth - groundOverlap
+                    : Math.floor(groundMesh2.position.x);
+
+                // Fill behind the tiles so a sub-pixel transition can never reveal the canvas.
+                ctx.fillStyle = '#6fbd38';
+                ctx.fillRect(0, groundY, stateContext.width, groundHeight);
+                if (!assets.ground.complete || !assets.ground.naturalWidth) return;
+
+                const leftMesh = firstX <= secondX ? firstX : secondX;
+                const rightMesh = firstX <= secondX ? secondX : firstX;
+                drawGroundMesh({ position: { x: leftMesh } }, false);
+                drawGroundMesh({ position: { x: rightMesh } }, true);
+            }
+
+            function resizeCanvas() {
+                stateContext.width = canvas.width = container.clientWidth;
+                stateContext.height = canvas.height = container.clientHeight;
+                resetGroundMeshes();
+                if (stateContext.current === GameState.START) {
+                    bird.reset(stateContext.width, stateContext.height);
+                }
+            }
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            // ---------- Game updates ----------
+            function updateGameEngine() {
+                if (stateContext.current !== GameState.PLAY) return;
+
+                bird.update();
+
+                updateGroundMovement(CONFIG.PIPE_SPEED, 1);
+
+                if (stateContext.frames % CONFIG.SPAWN_INTERVAL === 0) {
+                    let minH = 60;
+                    let maxH = stateContext.height - CONFIG.PIPE_GAP - minH - 90;
+                    let topH = Math.floor(Math.random() * maxH) + minH;
+
+                    pipes.push({
+                        x: stateContext.width,
+                        topHeight: topH,
+                        bottomY: topH + CONFIG.PIPE_GAP,
+                        passed: false
+                    });
+                }
+
+                let bLeft = bird.x - bird.width / 2 + 6;
+                let bRight = bird.x + bird.width / 2 - 6;
+                let bTop = bird.y - bird.height / 2 + 6;
+                let bBottom = bird.y + bird.height / 2 - 6;
+
+                for (let i = pipes.length - 1; i >= 0; i--) {
+                    let p = pipes[i];
+                    p.x -= CONFIG.PIPE_SPEED;
+
+                    if (bRight > p.x && bLeft < p.x + CONFIG.PIPE_WIDTH) {
+                        if (bTop < p.topHeight || bBottom > p.bottomY) {
+                            triggerGameOver();
+                        }
+                    }
+
+                    if (p.x + CONFIG.PIPE_WIDTH < bLeft && !p.passed) {
+                        stateContext.score++;
+                        scoreBadge.innerText = `SCORE: ${stateContext.score}`;
+                        p.passed = true;
+                        audio.sfxScore();
+                    }
+                }
+
+                if (bird.y + bird.height / 2 >= getGroundTop() || bird.y - bird.height / 2 <= 0) {
+                    triggerGameOver();
+                }
+
+                if (pipes.length > 0 && pipes[0].x + CONFIG.PIPE_WIDTH < 0) {
+                    pipes.shift();
+                }
+            }
+
+            // ---------- Pipe rendering ----------
+            // The asset contains a cap at its top edge. Keep that cap fixed and
+            // repeat only the plain shaft so every pipe height looks natural.
+            function drawPipe(x, y, height, capAtTop) {
+                if (!assets.pipe.complete || !assets.pipe.naturalWidth) return;
+
+                const sourceWidth = assets.pipe.naturalWidth;
+                const sourceHeight = assets.pipe.naturalHeight;
+                const sourceCapHeight = Math.max(1, Math.floor(sourceHeight * CONFIG.PIPE_CAP_SOURCE_RATIO));
+                const capHeight = Math.min(CONFIG.PIPE_CAP_HEIGHT, height);
+                const shaftHeight = Math.max(0, height - capHeight);
+                const shaftSourceHeight = Math.max(1, sourceHeight - sourceCapHeight);
+                const joinOverlap = Math.min(CONFIG.PIPE_JOIN_OVERLAP, capHeight, shaftHeight);
+
+                ctx.save();
+                ctx.imageSmoothingEnabled = false;
+
+                if (capAtTop) {
+                    ctx.drawImage(
+                        assets.pipe,
+                        0, 0, sourceWidth, sourceCapHeight,
+                        x, y, CONFIG.PIPE_WIDTH, capHeight
+                    );
+                    if (shaftHeight > 0) {
+                        drawPipeShaft(x, y + capHeight - joinOverlap, shaftHeight + joinOverlap,
+                            sourceWidth, sourceCapHeight, shaftSourceHeight);
+                    }
+                } else {
+                    if (shaftHeight > 0) {
+                        drawPipeShaft(x, y, shaftHeight + joinOverlap,
+                            sourceWidth, sourceCapHeight, shaftSourceHeight);
+                    }
+                    ctx.save();
+                    ctx.translate(x, y + height);
+                    ctx.scale(1, -1);
+                    ctx.drawImage(
+                        assets.pipe,
+                        0, 0, sourceWidth, sourceCapHeight,
+                        0, -joinOverlap, CONFIG.PIPE_WIDTH, capHeight + joinOverlap
+                    );
+                    ctx.restore();
+                }
+
+                ctx.restore();
+            }
+
+            function drawPipeShaft(x, y, height, sourceWidth, sourceCapHeight, sourceShaftHeight) {
+                const sourceTileHeight = Math.min(sourceShaftHeight, 64);
+                const tileHeight = Math.max(1, Math.round(
+                    CONFIG.PIPE_WIDTH * sourceTileHeight / sourceWidth
+                ));
+
+                for (let offset = 0; offset < height; offset += tileHeight) {
+                    const remainingHeight = Math.min(tileHeight, height - offset);
+                    const sourceHeight = sourceTileHeight * remainingHeight / tileHeight;
+                    ctx.drawImage(
+                        assets.pipe,
+                        0, sourceCapHeight, sourceWidth, sourceHeight,
+                        x, y + offset, CONFIG.PIPE_WIDTH, remainingHeight
+                    );
+                }
+            }
+
+            // ---------- Rendering ----------
+            function renderFrame() {
+                // Draw Background Asset
+                if (assets.bg.complete) {
+                    ctx.drawImage(assets.bg, 0, 0, stateContext.width, stateContext.height);
+                } else {
+                    ctx.fillStyle = '#70c5ce';
+                    ctx.fillRect(0, 0, stateContext.width, stateContext.height);
+                }
+
+                // Draw pipes with fixed-aspect caps and flexible shafts.
+                for (let i = 0; i < pipes.length; i++) {
+                    let p = pipes[i];
+                    drawPipe(p.x, 0, p.topHeight, false);
+                    drawPipe(p.x, p.bottomY, stateContext.height - p.bottomY, true);
+                }
+
+                drawSeamlessGround();
+
+                // Draw Bird Asset with 4:3 aspect ratio (width: 48, height: 36) and rotation
+                ctx.save();
+                ctx.translate(bird.x, bird.y);
+                let rot = Math.min(Math.PI / 3.5, Math.max(-Math.PI / 3.5, bird.velocity * 0.09));
+                ctx.rotate(rot);
+                ctx.drawImage(assets.bird, -bird.width / 2, -bird.height / 2, bird.width, bird.height);
+                ctx.restore();
+            }
+
+            function mainLoop() {
+                updateGameEngine();
+                renderFrame();
+                stateContext.frames++;
+                requestAnimationFrame(mainLoop);
+            }
+
+            // ---------- Game actions ----------
+            function executeFlapAction() {
+                audio.init();
+                if (stateContext.current === GameState.PLAY) {
+                    bird.velocity = CONFIG.JUMP_FORCE;
+                    audio.sfxFlap();
+                } else if (stateContext.current === GameState.START) {
+                    initializeGameSession();
+                }
+            }
+
+            function initializeGameSession() {
+                audio.init();
+                stateContext.current = GameState.PLAY;
+                stateContext.score = 0;
+                stateContext.frames = 0;
+                bird.reset(stateContext.width, stateContext.height);
+                bird.velocity = CONFIG.JUMP_FORCE;
+                pipes = [];
+                scoreBadge.innerText = `SCORE: ${stateContext.score}`;
+                scoreBadge.style.display = 'block';
+                startScreen.classList.add('hidden');
+                gameOverScreen.classList.add('hidden');
+                audio.sfxFlap();
+            }
+
+            function triggerGameOver() {
+                stateContext.current = GameState.OVER;
+                audio.sfxHit();
+                scoreBadge.style.display = 'none';
+
+                if (stateContext.score > stateContext.bestScore) {
+                    stateContext.bestScore = stateContext.score;
+                    localStorage.setItem(CONFIG.STORAGE_KEY, stateContext.bestScore.toString());
+                }
+
+                endScoreDisplay.innerText = stateContext.score;
+                bestScoreDisplay.innerText = stateContext.bestScore;
+                gameOverScreen.classList.remove('hidden');
+            }
+
+            function resetToStartup() {
+                gameOverScreen.classList.add('hidden');
+                startScreen.classList.remove('hidden');
+                stateContext.current = GameState.START;
+                bird.reset(stateContext.width, stateContext.height);
+                pipes = [];
+                stateContext.frames = 0;
+            }
+
+            // ---------- Input handlers ----------
+            function handleKeyDown(e) {
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    executeFlapAction();
+                }
+            }
+
+            function handlePointerDown(e) {
+                if (e.target.tagName !== 'BUTTON' && !e.target.closest('button')) {
+                    executeFlapAction();
+                }
+            }
+
+            function handleStartClick(e) {
+                e.stopPropagation();
+                initializeGameSession();
+            }
+
+            function handleRetryClick(e) {
+                e.stopPropagation();
+                resetToStartup();
+            }
+
+            async function handleShareClick(e) {
+                e.stopPropagation();
+                const shareData = {
+                    title: 'doodlebird',
+                    text: `I scored ${stateContext.score} in doodlebird!`,
+                    url: window.location.href
+                };
+
+                if (navigator.share) {
+                    try {
+                        await navigator.share(shareData);
+                    } catch (error) {
+                        if (error.name !== 'AbortError') console.error('Share failed:', error);
+                    }
+                    return;
+                }
+
+                try {
+                    await navigator.clipboard.writeText(window.location.href);
+                    shareBtn.setAttribute('aria-label', 'Game link copied');
+                } catch (error) {
+                    window.prompt('Copy this game link:', window.location.href);
+                }
+            }
+
+            function registerEventHandlers() {
+                window.addEventListener('keydown', handleKeyDown);
+                window.addEventListener('pointerdown', handlePointerDown);
+                startBtn.addEventListener('click', handleStartClick);
+                retryBtn.addEventListener('click', handleRetryClick);
+                shareBtn.addEventListener('click', handleShareClick);
+            }
+
+            // ---------- Start the game ----------
+            registerEventHandlers();
+            requestAnimationFrame(mainLoop);
+
+        })();
+    </script>
 </body>
 
 </html>
